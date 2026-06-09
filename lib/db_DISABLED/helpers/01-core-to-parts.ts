@@ -94,7 +94,7 @@
 //   );
 // }
 
-// async function migrateMessages() {
+// async function migrate_DISABLEDMessages() {
 //   const chats = await db.select().from(chat);
 
 //   let processedCount = 0;
@@ -242,7 +242,7 @@
 //   console.info(`Migration completed: ${processedCount} chats processed`);
 // }
 
-// migrateMessages()
+// migrate_DISABLEDMessages()
 //   .then(() => {
 //     console.info('Script completed successfully');
 //     process.exit(0);

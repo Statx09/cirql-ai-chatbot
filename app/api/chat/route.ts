@@ -1,4 +1,4 @@
-﻿export const runtime = "nodejs";
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
@@ -88,7 +88,7 @@ You are a guide, not a salesperson.
     const data = await res.json();
 
     if (!res.ok) {
-      console.error("🔥 GROQ ERROR:", data);
+      console.error("?? GROQ ERROR:", data);
 
       return Response.json(
         { error: data },
@@ -110,7 +110,7 @@ You are a guide, not a salesperson.
       reply,
     });
   } catch (err: any) {
-    console.error("🔥 SERVER ERROR:", err);
+    console.error("?? SERVER ERROR:", err);
 
     return Response.json(
       {

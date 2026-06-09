@@ -1,4 +1,4 @@
-export async function runMigrate() {
+export async function runmigrate_DISABLED() {
   if (!process.env.POSTGRES_URL) {
     console.log("DB disabled (MVP mode)");
     return;
