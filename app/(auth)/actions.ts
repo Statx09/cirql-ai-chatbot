@@ -11,3 +11,16 @@ export async function deleteTrailingMessages() {
 export async function updateChatVisibility() {
   return;
 }
+
+export async function register() {
+  return {
+    success: true,
+    user: null,
+  };
+}
+
+export type RegisterActionState = {
+  error?: string;
+  success?: boolean;
+};
+
