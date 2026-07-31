@@ -1,19 +1,20 @@
-export default function ChatPage() {
-  return (
-    <main
-      style={{
-        background: "#111",
-        color: "white",
-        minHeight: "100vh",
-        padding: "40px",
-        fontFamily: "sans-serif",
-      }}
-    >
-      <h1>Chat Page Loaded</h1>
+import { Chat } from "@/components/chat";
 
-      <p>
-        This is the dynamic chat route: <b>[id]</b>
-      </p>
-    </main>
+export default async function ChatPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+
+  return (
+    <Chat
+      id={id}
+      initialMessages={[]}
+      initialChatModel="chat-model"
+      initialVisibilityType="private"
+      isReadonly={false}
+      autoResume={false}
+    />
   );
 }

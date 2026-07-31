@@ -4,7 +4,11 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const incomingMessages = body?.messages;
+    console.log("🔥 CHAT BODY:", JSON.stringify(body, null, 2));
+
+    const incomingMessages = body?.messages ?? [
+  body?.message,
+];
 
     if (
       !Array.isArray(incomingMessages) ||
@@ -17,13 +21,14 @@ export async function POST(req: Request) {
     }
 
     const cleanedMessages = incomingMessages
-      .map((msg: any) => ({
-        role: msg.role,
-        content:
-          msg.content ||
-          msg.parts?.[0]?.text ||
-          "",
-      }))
+  .filter(Boolean)
+  .map((msg: any) => ({
+    role: msg.role,
+    content:
+      msg.content ||
+      msg.parts?.map((p: any) => p.text).join("") ||
+      "",
+  }))
       .filter(
         (msg: any) =>
           msg.content &&
