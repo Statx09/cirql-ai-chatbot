@@ -96,6 +96,7 @@ export async function POST(req: Request) {
       success: true,
       message,
     });
+  
   } catch (err: any) {
     console.error("Message route crash:", err);
 
@@ -105,7 +106,3 @@ export async function POST(req: Request) {
     );
   }
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> cleanup/remove-template-features
