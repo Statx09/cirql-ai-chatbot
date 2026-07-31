@@ -30,7 +30,12 @@ export async function POST(req: Request) {
       .single();
 
     if (msgError) {
-      console.error("Message error:", msgError);
+      console.error("MESSAGE INSERT FAILED");
+      console.error("code:", msgError.code);
+      console.error("message:", msgError.message);
+      console.error("details:", msgError.details);
+      console.error("hint:", msgError.hint);
+      console.error("full:", JSON.stringify(msgError, null, 2));
 
       return Response.json(
         { error: msgError.message },
@@ -100,3 +105,7 @@ export async function POST(req: Request) {
     );
   }
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> cleanup/remove-template-features

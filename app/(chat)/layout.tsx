@@ -1,4 +1,5 @@
 import { AppSidebar } from "@/components/app-sidebar";
+import { DataStreamProvider } from "@/components/data-stream-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export default function Layout({
@@ -7,14 +8,16 @@ export default function Layout({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider>
-      <div style={{ display: "flex", minHeight: "100vh" }}>
-        <AppSidebar />
+    <DataStreamProvider>
+      <SidebarProvider>
+        <div style={{ display: "flex", minHeight: "100vh" }}>
+          <AppSidebar />
 
-        <SidebarInset style={{ flex: 1 }}>
-          {children}
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+          <SidebarInset style={{ flex: 1 }}>
+            {children}
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    </DataStreamProvider>
   );
 }
