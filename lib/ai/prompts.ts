@@ -51,3 +51,5 @@ ${existingContent}
 
 Update it according to the user's request while preserving the parts that should remain unchanged.
 `;
+
+export const sheetPrompt = regularPrompt;
