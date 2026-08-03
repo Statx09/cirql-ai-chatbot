@@ -70,26 +70,17 @@ export const codeArtifact = new Artifact<"code", Metadata>({
   kind: "code",
   description:
     "Useful for code generation; Code execution is only available for python code.",
+
   initialize: ({ setMetadata }) => {
     setMetadata({
       outputs: [],
     });
   },
+
   onStreamPart: ({ streamPart, setArtifact }) => {
-    if (streamPart.type === "data-codeDelta") {
-      setArtifact((draftArtifact) => ({
-        ...draftArtifact,
-        content: streamPart.data,
-        isVisible:
-          draftArtifact.status === "streaming" &&
-          draftArtifact.content.length > 300 &&
-          draftArtifact.content.length < 310
-            ? true
-            : draftArtifact.isVisible,
-        status: "streaming",
-      }));
-    }
+    // Code artifact streaming disabled for current MVP
   },
+
   content: ({ metadata, setMetadata, ...props }) => {
     return (
       <>
@@ -111,6 +102,7 @@ export const codeArtifact = new Artifact<"code", Metadata>({
       </>
     );
   },
+
   actions: [
     {
       icon: <PlayIcon size={18} />,

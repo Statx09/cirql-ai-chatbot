@@ -26,11 +26,8 @@ export const codeDocumentHandler = createDocumentHandler<"code">({
         const { code } = object;
 
         if (code) {
-          dataStream.write({
-            type: "data-codeDelta",
-            data: code ?? "",
-            transient: true,
-          });
+  // Code artifact streaming disabled for current MVP
+}
 
           draftContent = code;
         }
@@ -59,11 +56,8 @@ export const codeDocumentHandler = createDocumentHandler<"code">({
         const { code } = object;
 
         if (code) {
-          dataStream.write({
-            type: "data-codeDelta",
-            data: code ?? "",
-            transient: true,
-          });
+  // Code artifact streaming disabled for current MVP
+}
 
           draftContent = code;
         }

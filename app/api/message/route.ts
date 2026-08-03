@@ -5,20 +5,42 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "http://localhost:5173",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders,
+  });
+}
+
 export async function POST(req: Request) {
   try {
+    console.log("=== MESSAGE ROUTE START ===");
+
     const body = await req.json();
+    console.log("BODY:", body);
 
     const { sender_id, receiver_id, text } = body;
 
     if (!sender_id || !receiver_id || !text) {
+      console.log("Missing required fields");
+
       return Response.json(
         { error: "Missing sender_id, receiver_id or text" },
-        { status: 400 }
+        {
+          status: 400,
+          headers: corsHeaders,
+        }
       );
     }
 
-    // 1. Insert message
+    console.log("Inserting message...");
+
     const { data: message, error: msgError } = await supabase
       .from("messages")
       .insert({
@@ -30,21 +52,22 @@ export async function POST(req: Request) {
       .single();
 
     if (msgError) {
-      console.error("MESSAGE INSERT FAILED");
-      console.error("code:", msgError.code);
-      console.error("message:", msgError.message);
-      console.error("details:", msgError.details);
-      console.error("hint:", msgError.hint);
-      console.error("full:", JSON.stringify(msgError, null, 2));
+      console.error("MESSAGE ERROR:", msgError);
 
       return Response.json(
         { error: msgError.message },
-        { status: 500 }
+        {
+          status: 500,
+          headers: corsHeaders,
+        }
       );
     }
 
-    // 2. Ensure connection exists
-    const { data: existing } = await supabase
+    console.log("Message inserted:", message);
+
+    console.log("Checking connection...");
+
+    const { data: existing, error: existingError } = await supabase
       .from("connections")
       .select("*")
       .or(
@@ -52,7 +75,13 @@ export async function POST(req: Request) {
       )
       .maybeSingle();
 
+    if (existingError) {
+      console.error("Connection lookup error:", existingError);
+    }
+
     if (!existing) {
+      console.log("Creating connection...");
+
       const { error: connError } = await supabase
         .from("connections")
         .insert({
@@ -62,20 +91,26 @@ export async function POST(req: Request) {
         });
 
       if (connError) {
-        console.error("Connection error:", connError);
+        console.error("Connection insert error:", connError);
       }
     }
 
-    // 3. Sender name for notification
-    const { data: sender } = await supabase
+    console.log("Looking up sender profile...");
+
+    const { data: sender, error: senderError } = await supabase
       .from("profiles")
       .select("name")
       .eq("user_id", sender_id)
       .single();
 
-    const senderName = sender?.name || "Someone";
+    if (senderError) {
+      console.error("Sender lookup error:", senderError);
+    }
 
-    // 4. Notification
+    const senderName = sender?.name ?? "Someone";
+
+    console.log("Creating notification...");
+
     const { error: notifError } = await supabase
       .from("notifications")
       .insert({
@@ -92,17 +127,28 @@ export async function POST(req: Request) {
       console.error("Notification error:", notifError);
     }
 
-    return Response.json({
-      success: true,
-      message,
-    });
-  
-  } catch (err: any) {
-    console.error("Message route crash:", err);
+    console.log("=== MESSAGE ROUTE COMPLETE ===");
 
     return Response.json(
-      { error: err.message || "Message failed" },
-      { status: 500 }
+      {
+        success: true,
+        message,
+      },
+      {
+        headers: corsHeaders,
+      }
+    );
+  } catch (err) {
+    console.error("FATAL MESSAGE ROUTE ERROR:", err);
+
+    return Response.json(
+      {
+        error: err instanceof Error ? err.message : "Unknown error",
+      },
+      {
+        status: 500,
+        headers: corsHeaders,
+      }
     );
   }
 }
