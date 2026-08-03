@@ -33,3 +33,21 @@ export const systemPrompt = ({
 
   return `${regularPrompt}\n\n${requestPrompt}`;
 };
+export const codePrompt = `
+You are an expert software engineer.
+Generate clean, well-structured, production-quality code.
+Return only the requested code.
+`;
+
+export const updateDocumentPrompt = (
+  existingContent: string,
+  kind: string
+) => `
+You are updating an existing ${kind} document.
+
+Existing content:
+
+${existingContent}
+
+Update it according to the user's request while preserving the parts that should remain unchanged.
+`;
