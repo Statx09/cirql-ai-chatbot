@@ -127,6 +127,76 @@ export async function POST(req: Request) {
       console.error("Notification error:", notifError);
     }
 
+/* ================= AI HOST ================= */
+
+const { data: receiverProfile } = await supabase
+  .from("profiles")
+  .select("is_ai, ai_personality")
+  .eq("user_id", receiver_id)
+  .single();
+
+if (receiverProfile?.is_ai) {
+
+  console.log("AI HOST DETECTED");
+
+  const groqResponse = await fetch(
+    "https://api.groq.com/openai/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-8b-instant",
+
+        messages: [
+          {
+            role: "system",
+            content: receiverProfile.ai_personality,
+          },
+          {
+            role: "user",
+            content: text,
+          },
+        ],
+
+        temperature: 0.85,
+        max_tokens: 400,
+      }),
+    }
+  );
+
+  const groqData = await groqResponse.json();
+
+  console.log("GROQ RESPONSE:", groqData);
+
+  const aiText =
+    groqData?.choices?.[0]?.message?.content ||
+    "Sorry, I am having trouble replying right now.";
+
+  const { data: aiMessage } = await supabase
+    .from("messages")
+    .insert({
+      sender_id: receiver_id,
+      receiver_id: sender_id,
+      text: aiText,
+    })
+    .select()
+    .single();
+
+  return Response.json(
+    {
+      success: true,
+      message,
+      ai_message: aiMessage,
+    },
+    {
+      headers: corsHeaders,
+    }
+  );
+}
+
     console.log("=== MESSAGE ROUTE COMPLETE ===");
 
     return Response.json(

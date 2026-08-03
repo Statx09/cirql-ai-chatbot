@@ -13,7 +13,6 @@ export async function POST(req: Request) {
       return Response.json({ error: "Missing user_id" }, { status: 400 });
     }
 
-    // 🔥 fetch ALL notification types properly
     const { data, error } = await supabase
       .from("notifications")
       .select("*")
@@ -24,25 +23,25 @@ export async function POST(req: Request) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    // ✅ NORMALIZE INTO REAL APP EVENTS
     const notifications = (data || []).map((n) => {
       return {
         id: n.id,
-        type: n.type || "system", // wave | message | system
+        type: n.type || "system",
         message:
-          n.message ||
+          n.body ||
           (n.type === "wave"
             ? "👋 Someone waved at you"
             : n.type === "message"
             ? "💬 New message"
             : "🔔 Notification"),
-        from_user: n.from_user,
+        from_user: n.actor_id,
         created_at: n.created_at,
-        read: n.read || false,
+        read: n.is_read || false,
+        reference_id: n.reference_id,
       };
     });
 
-        return Response.json({ notifications });
+    return Response.json({ notifications });
 
   } catch (err) {
     return Response.json(
