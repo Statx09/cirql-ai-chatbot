@@ -27,10 +27,8 @@ export const codeDocumentHandler = createDocumentHandler<"code">({
 
         if (code) {
   // Code artifact streaming disabled for current MVP
+  draftContent = code;
 }
-
-          draftContent = code ?? "";
-        }
       }
     }
 
@@ -57,13 +55,12 @@ export const codeDocumentHandler = createDocumentHandler<"code">({
 
         if (code) {
   // Code artifact streaming disabled for current MVP
+  draftContent = code;
 }
-
-          draftContent = code ?? "";
-        }
       }
     }
 
     return draftContent;
   },
 });
+
