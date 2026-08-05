@@ -38,6 +38,10 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "disabled-components",
+    "**/*.disabled/**",
+    "components/*.backup.tsx",
+    "components/*.backup.jsx"
   ]
 }
