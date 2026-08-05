@@ -108,7 +108,7 @@ importers:
         specifier: ^16.4.5
         version: 16.6.1
       drizzle-orm:
-        specifier: ^0.34.0
+        specifier: ^0.34.1
         version: 0.34.1(@neondatabase/serverless@0.9.5)(@opentelemetry/api@1.9.1)(@types/pg@8.11.6)(@types/react@18.3.29)(@vercel/postgres@0.10.0)(postgres@3.4.9)(react@18.3.1)
       embla-carousel-react:
         specifier: ^8.6.0
@@ -144,7 +144,7 @@ importers:
         specifier: ^5.5.2
         version: 5.5.3
       postgres:
-        specifier: ^3.4.4
+        specifier: ^3.4.9
         version: 3.4.9
       prosemirror-example-setup:
         specifier: ^1.2.3

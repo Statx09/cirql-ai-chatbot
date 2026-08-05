@@ -39,9 +39,9 @@ export async function POST(req: Request) {
       user_id: to_user,
       actor_id: from_user,
       type: "connect",
-      title: "🔗 New Connection Request",
-body: `${senderName} wants to connect with you`,
-reference_id: connection.id,
+      title: "?? New Connection Request",
+      body: `${senderName} wants to connect with you`,
+      reference_id: connection.id,
       is_read: false,
     });
 

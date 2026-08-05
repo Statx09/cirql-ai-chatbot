@@ -17,30 +17,27 @@ export async function OPTIONS() {
     headers: corsHeaders,
   });
 }
-
 export async function POST(req: Request) {
   try {
-    console.log("=== MESSAGE ROUTE START ===");
-
     const body = await req.json();
-    console.log("BODY:", body);
 
     const { sender_id, receiver_id, text } = body;
 
-    if (!sender_id || !receiver_id || !text) {
-      console.log("Missing required fields");
+        // Check if receiver is an AI host
+    const { data: receiver } = await supabase
+      .from("profiles")
+      .select("is_ai, ai_personality, name")
+      .eq("user_id", receiver_id)
+      .single();
 
+    if (!sender_id || !receiver_id || !text) {
       return Response.json(
         { error: "Missing sender_id, receiver_id or text" },
-        {
-          status: 400,
-          headers: corsHeaders,
-        }
+        { status: 400, headers: corsHeaders }
       );
     }
 
-    console.log("Inserting message...");
-
+    // 1. Insert message
     const { data: message, error: msgError } = await supabase
       .from("messages")
       .insert({
@@ -52,22 +49,16 @@ export async function POST(req: Request) {
       .single();
 
     if (msgError) {
-      console.error("MESSAGE ERROR:", msgError);
+      console.error("Message error:", msgError);
 
       return Response.json(
         { error: msgError.message },
-        {
-          status: 500,
-          headers: corsHeaders,
-        }
+        { status: 500, headers: corsHeaders }
       );
     }
 
-    console.log("Message inserted:", message);
-
-    console.log("Checking connection...");
-
-    const { data: existing, error: existingError } = await supabase
+    // 2. Ensure connection exists
+    const { data: existing } = await supabase
       .from("connections")
       .select("*")
       .or(
@@ -75,13 +66,7 @@ export async function POST(req: Request) {
       )
       .maybeSingle();
 
-    if (existingError) {
-      console.error("Connection lookup error:", existingError);
-    }
-
     if (!existing) {
-      console.log("Creating connection...");
-
       const { error: connError } = await supabase
         .from("connections")
         .insert({
@@ -91,26 +76,20 @@ export async function POST(req: Request) {
         });
 
       if (connError) {
-        console.error("Connection insert error:", connError);
+        console.error("Connection error:", connError);
       }
     }
 
-    console.log("Looking up sender profile...");
-
-    const { data: sender, error: senderError } = await supabase
+    // 3. Sender name for notification
+    const { data: sender } = await supabase
       .from("profiles")
       .select("name")
       .eq("user_id", sender_id)
       .single();
 
-    if (senderError) {
-      console.error("Sender lookup error:", senderError);
-    }
+    const senderName = sender?.name || "Someone";
 
-    const senderName = sender?.name ?? "Someone";
-
-    console.log("Creating notification...");
-
+    // 4. Notification
     const { error: notifError } = await supabase
       .from("notifications")
       .insert({
@@ -127,98 +106,64 @@ export async function POST(req: Request) {
       console.error("Notification error:", notifError);
     }
 
-/* ================= AI HOST ================= */
+        // 5. AI HOST RESPONSE
+    if (receiver?.is_ai) {
 
-const { data: receiverProfile } = await supabase
-  .from("profiles")
-  .select("is_ai, ai_personality")
-  .eq("user_id", receiver_id)
-  .single();
-
-if (receiverProfile?.is_ai) {
-
-  console.log("AI HOST DETECTED");
-
-  const groqResponse = await fetch(
-    "https://api.groq.com/openai/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
-
-        messages: [
-          {
-            role: "system",
-            content: receiverProfile.ai_personality,
+      const aiRes = await fetch(
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
           },
-          {
-            role: "user",
-            content: text,
-          },
-        ],
+          body: JSON.stringify({
+            model: "llama-3.1-8b-instant",
+            messages: [
+              {
+                role: "system",
+                content: receiver.ai_personality,
+              },
+              {
+                role: "user",
+                content: text,
+              },
+            ],
+            temperature: 0.7,
+            max_tokens: 400,
+          }),
+        }
+      );
 
-        temperature: 0.85,
-        max_tokens: 400,
-      }),
+      const aiData = await aiRes.json();
+
+      const reply =
+        aiData?.choices?.[0]?.message?.content;
+
+      if (reply) {
+
+        await supabase
+          .from("messages")
+          .insert({
+            sender_id: receiver_id,
+            receiver_id: sender_id,
+            text: reply,
+          });
+
+      }
     }
-  );
 
-  const groqData = await groqResponse.json();
-
-  console.log("GROQ RESPONSE:", groqData);
-
-  const aiText =
-    groqData?.choices?.[0]?.message?.content ||
-    "Sorry, I am having trouble replying right now.";
-
-  const { data: aiMessage } = await supabase
-    .from("messages")
-    .insert({
-      sender_id: receiver_id,
-      receiver_id: sender_id,
-      text: aiText,
-    })
-    .select()
-    .single();
-
-  return Response.json(
-    {
-      success: true,
-      message,
-      ai_message: aiMessage,
-    },
-    {
-      headers: corsHeaders,
-    }
-  );
-}
-
-    console.log("=== MESSAGE ROUTE COMPLETE ===");
 
     return Response.json(
-      {
-        success: true,
-        message,
-      },
-      {
-        headers: corsHeaders,
-      }
+      { success: true, message },
+      { headers: corsHeaders }
     );
-  } catch (err) {
-    console.error("FATAL MESSAGE ROUTE ERROR:", err);
+  } catch (err: any) {
+    console.error("Message route crash:", err);
 
     return Response.json(
-      {
-        error: err instanceof Error ? err.message : "Unknown error",
-      },
-      {
-        status: 500,
-        headers: corsHeaders,
-      }
+      { error: err.message || "Message failed" },
+      { status: 500, headers: corsHeaders }
     );
   }
 }

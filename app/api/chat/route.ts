@@ -1,14 +1,10 @@
-export const runtime = "nodejs";
+﻿export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    console.log("🔥 CHAT BODY:", JSON.stringify(body, null, 2));
-
-    const incomingMessages = body?.messages ?? [
-  body?.message,
-];
+    const incomingMessages = body?.messages;
 
     if (
       !Array.isArray(incomingMessages) ||
@@ -21,14 +17,13 @@ export async function POST(req: Request) {
     }
 
     const cleanedMessages = incomingMessages
-  .filter(Boolean)
-  .map((msg: any) => ({
-    role: msg.role,
-    content:
-      msg.content ||
-      msg.parts?.map((p: any) => p.text).join("") ||
-      "",
-  }))
+      .map((msg: any) => ({
+        role: msg.role,
+        content:
+          msg.content ||
+          msg.parts?.[0]?.text ||
+          "",
+      }))
       .filter(
         (msg: any) =>
           msg.content &&
@@ -93,7 +88,7 @@ You are a guide, not a salesperson.
     const data = await res.json();
 
     if (!res.ok) {
-      console.error("?? GROQ ERROR:", data);
+      console.error("🔥 GROQ ERROR:", data);
 
       return Response.json(
         { error: data },
@@ -115,7 +110,7 @@ You are a guide, not a salesperson.
       reply,
     });
   } catch (err: any) {
-    console.error("?? SERVER ERROR:", err);
+    console.error("🔥 SERVER ERROR:", err);
 
     return Response.json(
       {

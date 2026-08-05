@@ -1,11 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-export async function POST(req: Request) {
+export async function POST(req) {
   try {
     const { user_id } = await req.json();
 
@@ -13,6 +13,7 @@ export async function POST(req: Request) {
       return Response.json({ error: "Missing user_id" }, { status: 400 });
     }
 
+    // 🔥 fetch ALL notification types properly
     const { data, error } = await supabase
       .from("notifications")
       .select("*")
@@ -23,31 +24,28 @@ export async function POST(req: Request) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
+    // ✅ NORMALIZE INTO REAL APP EVENTS
     const notifications = (data || []).map((n) => {
       return {
         id: n.id,
-        type: n.type || "system",
+        type: n.type || "system", // wave | message | system
         message:
-          n.body ||
+          n.message ||
           (n.type === "wave"
             ? "👋 Someone waved at you"
             : n.type === "message"
             ? "💬 New message"
             : "🔔 Notification"),
-        from_user: n.actor_id,
+        from_user: n.from_user,
         created_at: n.created_at,
-        read: n.is_read || false,
-        reference_id: n.reference_id,
+        read: n.read || false,
       };
     });
 
     return Response.json({ notifications });
-
   } catch (err) {
     return Response.json(
-      {
-        error: err instanceof Error ? err.message : "Failed",
-      },
+      { error: err.message || "Failed" },
       { status: 500 }
     );
   }
