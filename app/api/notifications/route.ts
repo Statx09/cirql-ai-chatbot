@@ -5,7 +5,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function POST(req) {
+export async function POST(req: Request) {
   try {
     const { user_id } = await req.json();
 
@@ -43,10 +43,9 @@ export async function POST(req) {
     });
 
     return Response.json({ notifications });
-  } catch (err) {
-    return Response.json(
-      { error: err.message || "Failed" },
-      { status: 500 }
-    );
-  }
-}
+  } catch (err: any) {
+  return Response.json(
+    { error: err?.message || "Failed" },
+    { status: 500 }
+  );
+}}

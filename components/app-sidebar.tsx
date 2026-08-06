@@ -62,7 +62,9 @@ export function AppSidebar({ user }: { user?: User }) {
       <SidebarContent>
         <SidebarHistory user={user} />
       </SidebarContent>
-      <SidebarFooter>{user && <SidebarUserNav user={user} />}</SidebarFooter>
+      <SidebarFooter>
+  <SidebarUserNav />
+</SidebarFooter>
     </Sidebar>
   );
 }

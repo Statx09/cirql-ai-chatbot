@@ -420,7 +420,7 @@ function PureModelSelectorCompact({
           setOptimisticModelId(model.id);
           onModelChange?.(model.id);
           startTransition(() => {
-            saveChatModelAsCookie(model.id);
+            saveChatModelAsCookie();
           });
         }
       }}
