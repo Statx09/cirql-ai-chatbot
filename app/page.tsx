@@ -1,6 +1,7 @@
-
-import { redirect } from "next/navigation";
-
 export default function Home() {
-  redirect("/chat/test");
+  return (
+    <div>
+      AI Backend Running
+    </div>
+  );
 }

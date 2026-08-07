@@ -1,4 +1,4 @@
-import type { UserType } from "@/app/(auth)/auth";
+type UserType = "guest" | "regular";
 import type { ChatModel } from "./models";
 
 type Entitlements = {
