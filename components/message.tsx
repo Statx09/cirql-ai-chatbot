@@ -1,11 +1,14 @@
 "use client";
+
 import type { UseChatHelpers } from "@ai-sdk/react";
 import equal from "fast-deep-equal";
 import { motion } from "framer-motion";
 import { memo, useState } from "react";
+
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
 import { cn, sanitizeText } from "@/lib/utils";
+
 import { useDataStream } from "./data-stream-provider";
 import { MessageContent } from "./elements/message";
 import { Response } from "./elements/response";
@@ -76,20 +79,12 @@ const PurePreviewMessage = ({
             ),
             "min-h-96": message.role === "assistant" && requiresScrollPadding,
             "w-full":
-              (message.role === "assistant" &&
-                message.parts?.some(
-                  (p) => p.type === "text" && p.text?.trim()
-                )) ||
+              message.role === "assistant" ||
               mode === "edit",
-            "max-w-[calc(100%-2.5rem)] sm:max-w-[min(fit-content,80%)]":
-              message.role === "user" && mode !== "edit",
           })}
         >
           {attachmentsFromMessage.length > 0 && (
-            <div
-              className="flex flex-row justify-end gap-2"
-              data-testid={"message-attachments"}
-            >
+            <div className="flex flex-row justify-end gap-2">
               {attachmentsFromMessage.map((attachment) => (
                 <PreviewAttachment
                   attachment={{
@@ -107,7 +102,7 @@ const PurePreviewMessage = ({
             const { type } = part;
             const key = `message-${message.id}-part-${index}`;
 
-            if (type === "reasoning" && part.text?.trim().length > 0) {
+            if (type === "reasoning" && part.text?.trim()) {
               return (
                 <MessageReasoning
                   isLoading={isLoading}
@@ -118,75 +113,41 @@ const PurePreviewMessage = ({
             }
 
             if (type === "text") {
-              if (mode === "view") {
-                return (
-                  <div key={key}>
-                    <MessageContent
-                      className={cn({
-                        "w-fit break-words rounded-2xl px-3 py-2 text-right text-white":
-                          message.role === "user",
-                        "bg-transparent px-0 py-0 text-left":
-                          message.role === "assistant",
-                      })}
-                      data-testid="message-content"
-                      style={
-                        message.role === "user"
-                          ? { backgroundColor: "#006cff" }
-                          : undefined
-                      }
-                    >
-                      <Response>{sanitizeText(part.text)}</Response>
-                    </MessageContent>
-                  </div>
-                );
-              }
+              return (
+                <MessageContent
+                  className={cn({
+                    "w-fit break-words rounded-2xl px-3 py-2 text-white":
+                      message.role === "user",
+                    "bg-transparent px-0 py-0 text-left":
+                      message.role === "assistant",
+                  })}
+                  data-testid="message-content"
+                  key={key}
+                >
+                  <Response>{sanitizeText(part.text)}</Response>
+                </MessageContent>
+              );
             }
 
             if (type === "tool-getWeather") {
               const { toolCallId, state } = part;
 
               return (
-                <Tool defaultOpen={true} key={toolCallId}>
+                <Tool defaultOpen key={toolCallId}>
                   <ToolHeader state={state} type="tool-getWeather" />
+
                   <ToolContent>
                     {state === "input-available" && (
                       <ToolInput input={part.input} />
                     )}
+
                     {state === "output-available" && (
                       <ToolOutput
                         errorText={undefined}
-                        output={<Weather weatherAtLocation={part.output} />}
+                        output={
+                          <Weather weatherAtLocation={part.output} />
+                        }
                       />
-                    )}
-                  </ToolContent>
-                </Tool>
-              );
-            }
-
-
-            if (type === "tool-requestSuggestions") {
-              const { toolCallId, state } = part;
-
-              return (
-                <Tool defaultOpen={true} key={toolCallId}>
-                  <ToolHeader state={state} type="tool-requestSuggestions" />
-                  <ToolContent>
-                    {state === "input-available" && (
-                      <ToolInput input={part.input} />
-                    )}
-                    {state === "output-available" && (
-                      <ToolOutput
-  errorText={undefined}
-  output={
-    "error" in part.output ? (
-      <div className="rounded border p-2 text-red-500">
-        Error: {String(part.output.error)}
-      </div>
-    ) : (
-      JSON.stringify(part.output)
-    )
-  }
-/>
                     )}
                   </ToolContent>
                 </Tool>
@@ -196,7 +157,7 @@ const PurePreviewMessage = ({
             return null;
           })}
 
-          {!isReadonly && (
+                   {!isReadonly && (
             <MessageActions
               chatId={chatId}
               isLoading={isLoading}
@@ -218,20 +179,26 @@ export const PreviewMessage = memo(
     if (prevProps.isLoading !== nextProps.isLoading) {
       return false;
     }
+
     if (prevProps.message.id !== nextProps.message.id) {
       return false;
     }
-    if (prevProps.requiresScrollPadding !== nextProps.requiresScrollPadding) {
+
+    if (
+      prevProps.requiresScrollPadding !== nextProps.requiresScrollPadding
+    ) {
       return false;
     }
+
     if (!equal(prevProps.message.parts, nextProps.message.parts)) {
       return false;
     }
+
     if (!equal(prevProps.vote, nextProps.vote)) {
       return false;
     }
 
-    return false;
+    return true;
   }
 );
 
@@ -264,7 +231,9 @@ export const ThinkingMessage = () => {
 const LoadingText = ({ children }: { children: React.ReactNode }) => {
   return (
     <motion.div
-      animate={{ backgroundPosition: ["100% 50%", "-100% 50%"] }}
+      animate={{
+        backgroundPosition: ["100% 50%", "-100% 50%"],
+      }}
       className="flex items-center text-transparent"
       style={{
         background:
