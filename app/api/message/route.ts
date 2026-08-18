@@ -1,24 +1,36 @@
-import { createClient } from "@supabase/supabase-js";
+﻿import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://opencirqlproxy.vercel.app",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+const getCorsHeaders = (origin: string | null) => {
+  const allowedOrigins = [
+    "https://opencirqlproxy.vercel.app",
+    "http://localhost:5173",
+  ];
+
+  const allowedOrigin = origin && allowedOrigins.includes(origin)
+    ? origin
+    : "https://opencirqlproxy.vercel.app";
+
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  };
 };
 
-export async function OPTIONS() {
+export async function OPTIONS(req: Request) {
   return new Response(null, {
     status: 204,
-    headers: corsHeaders,
+    headers: getCorsHeaders(req.headers.get("origin")),
   });
 }
 export async function POST(req: Request) {
   try {
+    const corsHeaders = getCorsHeaders(req.headers.get("origin"));
     const body = await req.json();
 
     const { sender_id, receiver_id, text } = body;
@@ -44,6 +56,7 @@ export async function POST(req: Request) {
         sender_id,
         receiver_id,
         text,
+        event: "message",
       })
       .select()
       .single();
@@ -96,7 +109,7 @@ export async function POST(req: Request) {
         user_id: receiver_id,
         actor_id: sender_id,
         type: "message",
-        title: "💬 New Message",
+        title: "ðŸ’¬ New Message",
         body: `${senderName} sent you a message`,
         reference_id: message.id,
         is_read: false,
@@ -109,6 +122,12 @@ export async function POST(req: Request) {
         // 5. AI HOST RESPONSE
     if (receiver?.is_ai) {
 
+      console.log("AI HOST DETECTED:", {
+        receiver_id,
+        name: receiver.name,
+        is_ai: receiver.is_ai,
+      });
+
       const aiRes = await fetch(
         "https://api.groq.com/openai/v1/chat/completions",
         {
@@ -118,7 +137,7 @@ export async function POST(req: Request) {
             Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
           },
           body: JSON.stringify({
-            model: "llama-3.1-8b-instant",
+            model: "openai/gpt-oss-20b",
             messages: [
               {
                 role: "system",
@@ -137,23 +156,81 @@ export async function POST(req: Request) {
 
       const aiData = await aiRes.json();
 
+      console.log("GROQ STATUS:", aiRes.status);
+      console.log("GROQ RESPONSE:", JSON.stringify(aiData));
+
+      if (!aiRes.ok) {
+        console.error("GROQ ERROR:", aiData);
+
+        return Response.json(
+          {
+            error: "AI provider error",
+            details: aiData,
+          },
+          {
+            status: 502,
+            headers: corsHeaders,
+          }
+        );
+      }
+
       const reply =
         aiData?.choices?.[0]?.message?.content;
 
-      if (reply) {
+      if (!reply) {
+        console.error("NO AI REPLY:", aiData);
 
-        await supabase
-          .from("messages")
-          .insert({
-            sender_id: receiver_id,
-            receiver_id: sender_id,
-            text: reply,
-          });
-
+        return Response.json(
+          {
+            error: "AI provider returned no reply",
+            details: aiData,
+          },
+          {
+            status: 502,
+            headers: corsHeaders,
+          }
+        );
       }
+
+      const { data: aiMessage, error: aiMessageError } = await supabase
+        .from("messages")
+        .insert({
+          sender_id: receiver_id,
+          receiver_id: sender_id,
+          text: reply,
+          event: "message",
+        })
+        .select()
+        .single();
+
+      if (aiMessageError) {
+        console.error("AI MESSAGE INSERT ERROR:", aiMessageError);
+
+        return Response.json(
+          {
+            error: "AI reply generated but could not be saved",
+            details: aiMessageError.message,
+          },
+          {
+            status: 500,
+            headers: corsHeaders,
+          }
+        );
+      }
+
+      console.log("AI MESSAGE CREATED:", aiMessage);
+
+      return Response.json(
+        {
+          success: true,
+          message,
+          ai_message: aiMessage,
+        },
+        {
+          headers: corsHeaders,
+        }
+      );
     }
-
-
     return Response.json(
       { success: true, message },
       { headers: corsHeaders }
@@ -167,4 +244,9 @@ export async function POST(req: Request) {
     );
   }
 }
+
+
+
+
+
 
