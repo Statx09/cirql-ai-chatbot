@@ -66,7 +66,7 @@ export async function POST(req: Request) {
 
       return Response.json(
         { error: msgError.message },
-        { status: 500, headers: corsHeaders }
+        { status: 500, headers: getCorsHeaders(null) }
       );
     }
 
@@ -240,10 +240,11 @@ export async function POST(req: Request) {
 
     return Response.json(
       { error: err.message || "Message failed" },
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: getCorsHeaders(null) }
     );
   }
 }
+
 
 
 
