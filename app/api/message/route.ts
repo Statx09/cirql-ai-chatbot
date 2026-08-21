@@ -1,4 +1,4 @@
-﻿import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
         sender_id,
         receiver_id,
         text,
-        event: "message",
+        event: null,
       })
       .select()
       .single();
@@ -198,7 +198,7 @@ export async function POST(req: Request) {
           sender_id: receiver_id,
           receiver_id: sender_id,
           text: reply,
-          event: "message",
+          event: null,
         })
         .select()
         .single();
@@ -244,10 +244,3 @@ export async function POST(req: Request) {
     );
   }
 }
-
-
-
-
-
-
-
