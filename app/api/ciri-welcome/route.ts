@@ -12,6 +12,7 @@ const db = createClient(url, serviceKey);
 function cors(origin: string | null) {
   const allowed = [
     "https://opencirqlproxy.vercel.app",
+    "https://joincirql.vercel.app",
     "http://localhost:5173",
   ];
 

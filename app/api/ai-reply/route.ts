@@ -1,4 +1,5 @@
-﻿import { createClient } from "@supabase/supabase-js";
+﻿
+import { createClient } from "@supabase/supabase-js";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -8,10 +9,12 @@ const authClient = createClient(url, anonKey);
 const db = createClient(url, serviceKey);
 
 function cors(origin: string | null) {
-  const allowed = [
-    "https://opencirqlproxy.vercel.app",
-    "http://localhost:5173",
-  ];
+  
+const allowed = [
+  "https://opencirqlproxy.vercel.app",
+  "https://joincirql.vercel.app",
+  "http://localhost:5173",
+];
   return {
     "Access-Control-Allow-Origin":
       origin && allowed.includes(origin)
@@ -89,6 +92,83 @@ export async function POST(req: Request) {
       );
     }
 
+    // Founding 100 progress checks for Ciri only.
+    let founding100Context = "";
+
+    if (receiver_id === "15281081-5bab-46a6-9a54-db8683c5cd75") {
+      const [profile, xDetails, contribution, application, approval] =
+        await Promise.all([
+          db.from("profiles")
+            .select("profile_completed")
+            .eq("user_id", sender_id)
+            .maybeSingle(),
+
+          db.from("founding_100_x_details")
+            .select("x_username, x_profile_url, verification_status")
+            .eq("user_id", sender_id)
+            .maybeSingle(),
+
+          db.from("founding_100_contributions")
+            .select("contribution_type")
+            .eq("user_id", sender_id)
+            .order("created_at", { ascending: false })
+            .limit(1),
+
+          db.from("founding_100_applications")
+            .select("application_status, x_verification_status")
+            .eq("user_id", sender_id)
+            .maybeSingle(),
+
+          db.from("founding_100_approvals")
+            .select("slot_number")
+            .eq("user_id", sender_id)
+            .maybeSingle(),
+        ]);
+
+      founding100Context = `
+FOUNDING 100 DATABASE STATUS:
+- Profile: ${
+        profile.error
+          ? "CHECK UNAVAILABLE"
+          : profile.data?.profile_completed
+            ? "COMPLETE"
+            : "NOT COMPLETE"
+      }
+- X details: ${
+        xDetails.error
+          ? "CHECK UNAVAILABLE"
+          : xDetails.data
+            ? xDetails.data.verification_status.toUpperCase()
+            : "NOT RECEIVED"
+      }
+- Live Feed contribution: ${
+        contribution.error
+          ? "CHECK UNAVAILABLE"
+          : contribution.data?.length
+            ? "RECORDED: " + contribution.data[0].contribution_type
+            : "NOT RECORDED"
+      }
+- Application: ${
+        application.error
+          ? "CHECK UNAVAILABLE"
+          : application.data?.application_status.toUpperCase() || "NOT SUBMITTED"
+      }
+- Approval: ${
+        approval.error
+          ? "CHECK UNAVAILABLE"
+          : approval.data
+            ? "APPROVED, SLOT " + approval.data.slot_number
+            : "NOT APPROVED"
+      }
+
+Use these database records as the source of truth.
+Guide the user one step at a time.
+Never claim a step is complete unless confirmed.
+Never claim X verification or approval without a matching database record.
+`;
+
+    }
+
     const { data: history, error: historyError } = await db
       .from("messages")
       .select("sender_id, receiver_id, text")
@@ -123,6 +203,8 @@ export async function POST(req: Request) {
             {
               role: "system",
               content: `${host.ai_personality || `You are ${host.name}, an AI host on UpCall.`}
+
+${founding100Context}
 
 CONVERSATION STYLE:
 - Talk naturally and warmly, like a friendly host having a real-time chat.
@@ -192,5 +274,6 @@ CONVERSATION STYLE:
     );
   }
 }
+
 
 
